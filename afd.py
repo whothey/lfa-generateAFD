@@ -66,7 +66,7 @@ def leGR(linha):
 	i_linha = 1
 	estado = splitNT(linha)
 	if estado not in AFND:
-		AFND[estado] = {}
+		AFND[cont] = {}
 		E.append(estado)
 	while linha[i_linha] != ':':
 		i_linha += 1
@@ -164,7 +164,5 @@ def main():
 				print("NAO", end=" ")
 		print("")
 
-	#determinizar
-	determiniza()
 
 main()
