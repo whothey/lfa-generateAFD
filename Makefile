@@ -1,2 +1,2 @@
 make:
-	python3 afd.py
+	python3 main.py

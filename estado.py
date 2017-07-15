@@ -4,3 +4,4 @@ class estado:
 		self.rotulo = ""
 		self.inicial = False
 		self.final = False
+		self.rotuloGr = ""
