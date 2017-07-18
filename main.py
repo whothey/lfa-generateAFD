@@ -1,6 +1,7 @@
-# @author Jefferson Coppini, Jonathan Rauber
+# @author Jefferson Coppini, Jonathan Rauber e Ricardo Muller
 from estado import *
 from transicoes import *
+import csv
 
 AFND = []
 ALFABETO = []
@@ -19,21 +20,23 @@ def splitNT (linha):
 		I_LINHA += 1
 	return NT
 
+#Recebe como parametro uma linha da entrada referente a um token
+#converte esse token em estados no AF
 def leToken(linha):
 	global AFND, ALFABETO, CONT_ESTADO
 	flag = 0
 	for i in AFND[0].transicoes:
-		if i.rotulo == linha[0]:#linha[0] esta no estado inicial
+		if i.rotulo == linha[0]:
 			i.transicoes.append(CONT_ESTADO)
 			flag = 1
 
-	if flag == 0: #linha[0] nao esta no estado inicial
+	if flag == 0:
 		transic = transicoes()
 		transic.rotulo = linha[0]
 		transic.transicoes.append(CONT_ESTADO)
 		AFND[0].transicoes.append(transic)
 
-	if linha[0] not in ALFABETO:
+	if linha[0] not in ALFABETO and linha[0] != 'ε':
 		ALFABETO.append(linha[0])
 
 	i = 1
@@ -47,7 +50,7 @@ def leToken(linha):
 		trans.transicoes.append(CONT_ESTADO)
 		estad.transicoes.append(trans)
 		AFND.append(estad)
-		if linha[i] not in ALFABETO:
+		if linha[i] not in ALFABETO and linha[0] != 'ε':
 			ALFABETO.append(linha[i])
 		i += 1
 
@@ -56,7 +59,10 @@ def leToken(linha):
 	estad.final = True
 	CONT_ESTADO += 1
 	AFND.append(estad)
-	
+
+#Recebe como parametro o estado, o terminal e o nao terminal da producao
+#Cria o estado ou a transicao no AF caso necessário
+#Caso em que a produção contem um terminal e um não terminal ex: a<A>
 def NaoTerm(estad,term,nao_term):
 	global AFND, CONT_ESTADO, ALFABETO, ESTADOS
 	flag = 0
@@ -104,42 +110,46 @@ def NaoTerm(estad,term,nao_term):
 			ESTADOS.append(est)
 			AFND.append(est)
 		ESTADOS[cont].transicoes.append(transi)
-
+		
+#Recebe como parametro o estado e o terminal da producao
+#Cria a transicao no AF caso necessário
+#Caso em que a produção contem apenas o terminal ex: ε
 def Term(estad, term):
 	global AFND, CONT_ESTADO, ALFABETO, ESTADOS	
-	have_est_erro = False
+
 	cont = 0
-	rot = 0
 	flag = 0
-	
 	for i in ESTADOS:
 		if i.rotuloGr == estad:
 			break
 		cont += 1
 	
-	for i in ESTADOS:
-		if i.rotuloGr == 'X':
-			rot = i.rotulo
-
 	for i in ESTADOS[cont].transicoes:
 		if i.rotulo == term:
 			flag = 1
-			if rot not in i.transicoes:
-				i.transicoes.append(rot)
+			i.transicoes.append(CONT_ESTADO)
 	
 	if flag == 0:
 		transi = transicoes()
 		transi.rotulo = term
-		transi.transicoes.append(rot)
+		transi.transicoes.append(CONT_ESTADO)
 		ESTADOS[cont].transicoes.append(transi)
+	
+	est = estado()
+	est.rotulo = CONT_ESTADO
+	CONT_ESTADO += 1
+	ESTADOS.append(est)
+	AFND.append(est)
 
+#Inicializa o vetor de estados, para controle na criação de estados com mesmo nome em gramaticas diferentes
 def inicializaEST():
 	global ESTADOS, AFND
 	while ESTADOS:
 		ESTADOS.pop(0)
 	ESTADOS.append(AFND[0])
-	ESTADOS.append(AFND[1])
-	
+
+#Recebe como parametro uma linha da entrada referente a um Estado e suas produçoes
+#converte essa linha em estados no AFD
 def leGR(linha):
 	global AFND, CONT_ESTADO, ALFABETO, I_LINHA, ESTADOS
 	I_LINHA = 1
@@ -168,12 +178,9 @@ def leGR(linha):
 		if linha[I_LINHA] == '\n':
 			break
 		term = linha[I_LINHA]
-		if term not in ALFABETO:
+		if term not in ALFABETO and term != 'ε':
 			ALFABETO.append(term)
 		I_LINHA += 1
-
-		if term not in ALFABETO:
-			ALFABETO.append(term)
 
 		if linha[I_LINHA] == '<':
 			I_LINHA += 1
@@ -188,16 +195,25 @@ def leGR(linha):
 						i.final = True
 			Term(std,term)
 		
-		
 
+#Imprime na tela automato nao deterministico
 def printAFND():
-
+	for i in ALFABETO:
+		print(i, end = " ")
+	print()
 	for i in AFND:
 		print(i.rotulo, end = " ")
-		for j in i.transicoes:
-			print(j.transicoes, end = " ")
+		for k in ALFABETO:
+			flag = 0
+			for j in i.transicoes:
+				if j.rotulo == k:
+					print(j.transicoes, end = " ")
+					flag = 1
+			if flag == 0:		
+				print("X" , end = " ")
 		print()
 
+#Imprime na tela automato deterministico
 def printAFD():
 
 	for i in AFD:
@@ -205,9 +221,15 @@ def printAFD():
 		for j in i.transicoes:
 			if j.trans != -1:
 				print(j.trans, end = " ")
+			else:
+				print("X", end = " ")
 		print()
 	
 
+#função que determiniza o AFND
+#cria o AFD
+#Costroi o AFD a partir do estado inicial
+#Por ser construído a partir de seu estado inicial a função elimina os estados inalcançaveis
 def determinizar():
 	global  AFND, AFD, CONT_ESTADO
 	CONTADOR = 0
@@ -218,6 +240,9 @@ def determinizar():
 	fila.append(lista)
 	fila_aux.append(lista)
 	while fila:
+		printAFD()
+		print("FILA")
+		print(fila)
 		est = estado()
 		est.rotulo = CONTADOR
 		CONTADOR += 1
@@ -248,6 +273,8 @@ def determinizar():
 		AFD.append(est)
 		fila.pop(0)	
 
+#adiciona ao atributo alcancaveis de cada estado, os estados que podem ser alcançaveis a partir dele mesmo
+#utilizado para verificação dos estados mortos
 def alcancaveis():
 	global AFD
 	change = True
@@ -268,7 +295,9 @@ def alcancaveis():
 						i.alcancaveis.append(k)
 						i.alcancaveis.sort()
 						change = True
-			 
+
+#Exclui do AFD o estado que não chega a algum estado final
+#verifica em cada estado o vetor de alcancaveis, se nenhum deles for final o estado é eliminado	 
 def mortos():
 	global AFD
 	mortos = []
@@ -292,6 +321,49 @@ def mortos():
 			if i == j.rotulo:
 				AFD.pop(cont)
 			cont += 1
+
+#insere estado de erro após automato ser minimizado
+def insereEstErro():
+	global AFD
+	
+	est = estado()
+	est.rotulo = len(AFD)
+	est.rotuloGr = 'X'
+	AFD.append(est)
+	for k in ALFABETO:
+		trans = transicoes()
+		trans.trans = est.rotulo
+		est.transicoes.append(trans)
+	
+	for i in AFD:
+		for j in i.transicoes:
+			if j.trans == -1:
+				j.trans = est.rotulo
+	for i in AFD:
+		trans = transicoes()
+		trans.trans = est.rotulo
+		i.transicoes.append(trans)
+
+#gera arquivo csv do AFD
+def gerarCSV():
+	global AFD
+	
+	alf = []
+	alf.append("Estado")
+	
+	for i in ALFABETO:
+		alf.append(i)
+	
+	f = open('AFD.csv','w')
+	writer = csv.writer(f)
+	
+	writer.writerow(alf)
+	for i in AFD:
+		linha = []
+		linha.append(i.rotulo)
+		for j in i.transicoes:
+			linha.append(j.trans)
+		writer.writerow(linha)
 						
 def main():
 	global CONT_ESTADO, AFND, ESTADOS
@@ -307,19 +379,16 @@ def main():
 				est.rotuloGr = 'S'
 				AFND.append(est)
 				CONT_ESTADO +=1
-				est = estado()
-				est.rotulo = CONT_ESTADO
-				est.final = True
-				est.rotuloGr = 'X'
-				AFND.append(est)
-				CONT_ESTADO +=1
 			if(linha[0] != '<'):
 				leToken(linha)
 			else:
 				leGR(linha)
-		printAFND()
+		#printAFND()
 		determinizar()
-		printAFD()
+		#printAFD()
 		mortos()
-		printAFD()
+		#printAFD()
+		insereEstErro()
+		gerarCSV()
+		
 main()
