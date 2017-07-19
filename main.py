@@ -2,6 +2,8 @@
 from estado import *
 from transicoes import *
 import csv
+import os
+from prettytable import PrettyTable
 
 AFND = []
 ALFABETO = []
@@ -73,13 +75,13 @@ def NaoTerm(estad,term,nao_term):
 		if i.rotuloGr == estad:
 			break
 		cont += 1
-	
+
 	for i in ESTADOS:
 		if i.rotuloGr == nao_term:
 			have_nao_term = True
 			rot = i.rotulo
-		
-	
+
+
 	for i in ESTADOS[cont].transicoes:
 		if i.rotulo == term:
 			flag = 1
@@ -95,7 +97,7 @@ def NaoTerm(estad,term,nao_term):
 				ESTADOS.append(est)
 				AFND.append(est)
 			break
-	
+
 	if flag == 0:
 		transi = transicoes()
 		transi.rotulo = term
@@ -110,12 +112,12 @@ def NaoTerm(estad,term,nao_term):
 			ESTADOS.append(est)
 			AFND.append(est)
 		ESTADOS[cont].transicoes.append(transi)
-		
+
 #Recebe como parametro o estado e o terminal da producao
 #Cria a transicao no AF caso necessário
 #Caso em que a produção contem apenas o terminal ex: ε
 def Term(estad, term):
-	global AFND, CONT_ESTADO, ALFABETO, ESTADOS	
+	global AFND, CONT_ESTADO, ALFABETO, ESTADOS
 
 	cont = 0
 	flag = 0
@@ -123,18 +125,18 @@ def Term(estad, term):
 		if i.rotuloGr == estad:
 			break
 		cont += 1
-	
+
 	for i in ESTADOS[cont].transicoes:
 		if i.rotulo == term:
 			flag = 1
 			i.transicoes.append(CONT_ESTADO)
-	
+
 	if flag == 0:
 		transi = transicoes()
 		transi.rotulo = term
 		transi.transicoes.append(CONT_ESTADO)
 		ESTADOS[cont].transicoes.append(transi)
-	
+
 	est = estado()
 	est.rotulo = CONT_ESTADO
 	CONT_ESTADO += 1
@@ -153,16 +155,16 @@ def inicializaEST():
 def leGR(linha):
 	global AFND, CONT_ESTADO, ALFABETO, I_LINHA, ESTADOS
 	I_LINHA = 1
-	
+
 	std = splitNT(linha)
 	if std == 'S':
 		inicializaEST()
-	
+
 	flag = 0
 	for i in ESTADOS:
 		if i.rotuloGr == std:
 			flag = 1
-	
+
 	if flag == 0:
 		est = estado()
 		est.rotulo = CONT_ESTADO
@@ -170,7 +172,7 @@ def leGR(linha):
 		CONT_ESTADO += 1
 		ESTADOS.append(est)
 		AFND.append(est)
-		
+
 
 	while linha[I_LINHA] != '\n':
 		while linha[I_LINHA] == '>' or linha[I_LINHA] == ' ' or linha[I_LINHA] == ':' or linha[I_LINHA] == '='  or linha[I_LINHA] == '|':
@@ -187,44 +189,51 @@ def leGR(linha):
 			nao_term = splitNT(linha)
 			I_LINHA += 1
 			NaoTerm(std,term,nao_term)
-			
+
 		else:
 			if term == 'ε':
 				for i in ESTADOS:
 					if i.rotuloGr == std:
 						i.final = True
 			Term(std,term)
-		
+
 
 #Imprime na tela automato nao deterministico
-def printAFND():
-	for i in ALFABETO:
-		print(i, end = " ")
-	print()
+def printIdentAFND():
+	header = ['δ'] + ALFABETO
+	t = PrettyTable(header)
 	for i in AFND:
-		print(i.rotulo, end = " ")
+		linha = []
+		linha = [i.rotulo]
 		for k in ALFABETO:
 			flag = 0
 			for j in i.transicoes:
 				if j.rotulo == k:
-					print(j.transicoes, end = " ")
+					linha = linha + [j.transicoes]
 					flag = 1
-			if flag == 0:		
-				print("X" , end = " ")
-		print()
+			if flag == 0:
+				linha = linha + ['X']
+		t.add_row(linha)
+	print(t)
+
 
 #Imprime na tela automato deterministico
-def printAFD():
-
+def printIdentAFD(comErro = False):
+	header = ['δ'] + ALFABETO
+	if comErro:
+		header = header + ['x']
+	t = PrettyTable(header)
 	for i in AFD:
-		print(i.rotulo, end = " ")
+		linha = []
+		linha = [i.rotulo]
 		for j in i.transicoes:
 			if j.trans != -1:
-				print(j.trans, end = " ")
+				linha = linha + [j.trans]
 			else:
-				print("X", end = " ")
-		print()
-	
+				linha = linha + ['X']
+		t.add_row(linha)
+	print(t)
+
 
 #função que determiniza o AFND
 #cria o AFD
@@ -240,9 +249,15 @@ def determinizar():
 	fila.append(lista)
 	fila_aux.append(lista)
 	while fila:
-		printAFD()
-		print("FILA")
+		print()
+		print("=======================")
+		print()
+		print("Determinização: ")
+		printIdentAFD()
+		print("\nFILA\n")
 		print(fila)
+		print()
+		input("Tecle 'Enter' para continuar...")
 		est = estado()
 		est.rotulo = CONTADOR
 		CONTADOR += 1
@@ -258,7 +273,7 @@ def determinizar():
 				for k in AFND[i].transicoes:
 					if k.rotulo == j:
 						for l in k.transicoes:
-							if l not in trans.transicoes: 
+							if l not in trans.transicoes:
 								trans.transicoes.append(l)
 								trans.transicoes.sort()
 			if trans.transicoes not in fila_aux:
@@ -271,21 +286,21 @@ def determinizar():
 				cont += 1
 			est.transicoes.append(trans)
 		AFD.append(est)
-		fila.pop(0)	
+		fila.pop(0)
 
 #adiciona ao atributo alcancaveis de cada estado, os estados que podem ser alcançaveis a partir dele mesmo
 #utilizado para verificação dos estados mortos
 def alcancaveis():
 	global AFD
 	change = True
-	
+
 	for i in AFD:
 		if i.rotulo not in i.alcancaveis:
 			i.alcancaveis.append(i.rotulo)
 		for j in i.transicoes:
 			if j.trans not in i.alcancaveis:
 				if j.trans != -1:
-					i.alcancaveis.append(j.trans) 
+					i.alcancaveis.append(j.trans)
 	while change:
 		change = False
 		for i in AFD:
@@ -297,12 +312,12 @@ def alcancaveis():
 						change = True
 
 #Exclui do AFD o estado que não chega a algum estado final
-#verifica em cada estado o vetor de alcancaveis, se nenhum deles for final o estado é eliminado	 
+#verifica em cada estado o vetor de alcancaveis, se nenhum deles for final o estado é eliminado
 def mortos():
 	global AFD
 	mortos = []
 	alcancaveis()
-	
+
 	for i in AFD:
 		have_final = False
 		for j in i.alcancaveis:
@@ -325,7 +340,7 @@ def mortos():
 #insere estado de erro após automato ser minimizado
 def insereEstErro():
 	global AFD
-	
+
 	est = estado()
 	est.rotulo = len(AFD)
 	est.rotuloGr = 'X'
@@ -334,7 +349,7 @@ def insereEstErro():
 		trans = transicoes()
 		trans.trans = est.rotulo
 		est.transicoes.append(trans)
-	
+
 	for i in AFD:
 		for j in i.transicoes:
 			if j.trans == -1:
@@ -347,16 +362,16 @@ def insereEstErro():
 #gera arquivo csv do AFD
 def gerarCSV():
 	global AFD
-	
+
 	alf = []
 	alf.append("Estado")
-	
+
 	for i in ALFABETO:
 		alf.append(i)
-	
+
 	f = open('AFD.csv','w')
 	writer = csv.writer(f)
-	
+
 	writer.writerow(alf)
 	for i in AFD:
 		linha = []
@@ -364,9 +379,12 @@ def gerarCSV():
 		for j in i.transicoes:
 			linha.append(j.trans)
 		writer.writerow(linha)
-						
+
 def main():
 	global CONT_ESTADO, AFND, ESTADOS
+
+	os.system('clear')
+
 	#abre o arquivo em modo de leitura
 	with open("entrada.txt", "r") as arquivo:
 		for linha in arquivo:
@@ -383,12 +401,22 @@ def main():
 				leToken(linha)
 			else:
 				leGR(linha)
-		#printAFND()
+		print("Autômato Finito Não Determinístico: \n")
+		printIdentAFND()
+		input("Tecle 'Enter' para continuar...")
 		determinizar()
-		#printAFD()
+		print()
+		print("=======================")
+		print()
+		print("Autômato Finito Determinístico:")
+		printIdentAFD()
 		mortos()
-		#printAFD()
 		insereEstErro()
+		print()
+		print("=======================")
+		print()
+		print("AFD Minimizado: ")
+		printIdentAFD(comErro = True)
 		gerarCSV()
-		
+
 main()
