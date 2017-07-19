@@ -136,8 +136,8 @@ def Term(estad, term):
 		transi.rotulo = term
 		transi.transicoes.append(CONT_ESTADO)
 		ESTADOS[cont].transicoes.append(transi)
-
 	est = estado()
+	est.final = True
 	est.rotulo = CONT_ESTADO
 	CONT_ESTADO += 1
 	ESTADOS.append(est)
@@ -203,17 +203,18 @@ def printIdentAFND():
 	header = ['δ'] + ALFABETO
 	t = PrettyTable(header)
 	for i in AFND:
-		linha = []
-		linha = [i.rotulo]
-		for k in ALFABETO:
-			flag = 0
-			for j in i.transicoes:
-				if j.rotulo == k:
-					linha = linha + [j.transicoes]
-					flag = 1
-			if flag == 0:
-				linha = linha + ['X']
-		t.add_row(linha)
+		if i.final == True:
+			linha = []
+			linha = [i.rotulo]
+			for k in ALFABETO:
+				flag = 0
+				for j in i.transicoes:
+					if j.rotulo == k:
+						linha = linha + [j.transicoes]
+						flag = 1
+				if flag == 0:
+					linha = linha + ['X']
+			t.add_row(linha)
 	print(t)
 
 
@@ -344,6 +345,7 @@ def insereEstErro():
 	est = estado()
 	est.rotulo = len(AFD)
 	est.rotuloGr = 'X'
+	est.final = True
 	AFD.append(est)
 	for k in ALFABETO:
 		trans = transicoes()
