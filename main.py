@@ -203,18 +203,20 @@ def printIdentAFND():
 	header = ['δ'] + ALFABETO
 	t = PrettyTable(header)
 	for i in AFND:
-		if i.final == True:
-			linha = []
+		linha = []
+		if i.final:
+			linha = ['*' + str(i.rotulo)]
+		else:
 			linha = [i.rotulo]
-			for k in ALFABETO:
-				flag = 0
-				for j in i.transicoes:
-					if j.rotulo == k:
-						linha = linha + [j.transicoes]
-						flag = 1
-				if flag == 0:
-					linha = linha + ['X']
-			t.add_row(linha)
+		for k in ALFABETO:
+			flag = 0
+			for j in i.transicoes:
+				if j.rotulo == k:
+					linha = linha + [j.transicoes]
+					flag = 1
+			if flag == 0:
+				linha = linha + ['X']
+		t.add_row(linha)
 	print(t)
 
 
@@ -225,8 +227,10 @@ def printIdentAFD(comErro = False):
 		header = header + ['x']
 	t = PrettyTable(header)
 	for i in AFD:
-		linha = []
-		linha = [i.rotulo]
+		if i.final:
+			linha = ['*' + str(i.rotulo)]
+		else:
+			linha = [i.rotulo]
 		for j in i.transicoes:
 			if j.trans != -1:
 				linha = linha + [j.trans]
@@ -412,6 +416,7 @@ def main():
 		print()
 		print("Autômato Finito Determinístico:")
 		printIdentAFD()
+		input("Tecle 'Enter' para continuar...")
 		mortos()
 		insereEstErro()
 		print()
