@@ -238,6 +238,10 @@ def printIdentAFND():
 	for i in AFND:
 		linha = []
 		linha = [i.rotulo]
+		if i.final:
+			linha = ['*' + str(i.rotulo)]
+		else:
+			linha = [i.rotulo]
 		for k in ALFABETO:
 			flag = 0
 			for j in i.transicoes:
@@ -257,8 +261,10 @@ def printIdentAFD(comErro = False):
 		header = header + ['x']
 	t = PrettyTable(header)
 	for i in AFD:
-		linha = []
-		linha = [i.rotulo]
+		if i.final:
+			linha = ['*' + str(i.rotulo)]
+		else:
+			linha = [i.rotulo]
 		for j in i.transicoes:
 			if j.trans != -1:
 				linha = linha + [j.trans]
@@ -430,6 +436,7 @@ def rec_token(token):
 	aux = 0
 	flag = 0
 	while(token[i] != '\n'):
+		flag = 0
 		for j in AFD[rot].transicoes:
 			if j.rotulo == token[i]:	
 				flag = 1			
