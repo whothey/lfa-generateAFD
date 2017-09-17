@@ -1,16 +1,27 @@
 # @author Jefferson Coppini, Jonathan Rauber e Ricardo Muller
+from erro import *
 from estado import *
 from transicoes import *
+from token import *
 import csv
 import os
 from prettytable import PrettyTable
 
+#erros
+ERRO_LEX = 0
+
+#GLOBAIS
+TABELA_ERROS = []
+TABELA_SIMBOLOS = []
 AFND = []
 ALFABETO = []
 CONT_ESTADO = 0
 I_LINHA = 0
 ESTADOS = []
 AFD = []
+FITA = []
+i = 0
+CONT_LINHA = 1
 
 #Lê o estado entre os símbolos "<" e ">"
 def splitNT (linha):
@@ -21,7 +32,28 @@ def splitNT (linha):
 		NT = NT + linha[I_LINHA]
 		I_LINHA += 1
 	return NT
+	
+def insereTabSimb(constante,valor):
+	global TABELA_SIMBOLOS
+	tok = token()
+	tok.valor = valor
+	tok.token = constante
+	TABELA_SIMBOLOS.append(tok)	
 
+def leConst(linha):
+	global i
+	
+	i = 1
+	constante = split_token(linha)
+	const = constante + '\n'
+	leToken(const)
+	
+	while(linha[i] == ' ' or linha[i] == '='):
+		i+=1
+	valor = split_token(linha)
+	insereTabSimb(constante,valor)
+	
+	
 #Recebe como parametro uma linha da entrada referente a um token
 #converte esse token em estados no AF
 def leToken(linha):
@@ -59,6 +91,7 @@ def leToken(linha):
 	estad = estado()
 	estad.rotulo = CONT_ESTADO
 	estad.final = True
+	estad.eh_token = True
 	CONT_ESTADO += 1
 	AFND.append(estad)
 
@@ -203,18 +236,17 @@ def printIdentAFND():
 	header = ['δ'] + ALFABETO
 	t = PrettyTable(header)
 	for i in AFND:
-		if i.final == True:
-			linha = []
-			linha = [i.rotulo]
-			for k in ALFABETO:
-				flag = 0
-				for j in i.transicoes:
-					if j.rotulo == k:
-						linha = linha + [j.transicoes]
-						flag = 1
-				if flag == 0:
-					linha = linha + ['X']
-			t.add_row(linha)
+		linha = []
+		linha = [i.rotulo]
+		for k in ALFABETO:
+			flag = 0
+			for j in i.transicoes:
+				if j.rotulo == k:
+					linha = linha + [j.transicoes]
+					flag = 1
+			if flag == 0:
+				linha = linha + ['X']
+		t.add_row(linha)
 	print(t)
 
 
@@ -250,15 +282,6 @@ def determinizar():
 	fila.append(lista)
 	fila_aux.append(lista)
 	while fila:
-		print()
-		print("=======================")
-		print()
-		print("Determinização: ")
-		printIdentAFD()
-		print("\nFILA\n")
-		print(fila)
-		print()
-		input("Tecle 'Enter' para continuar...")
 		est = estado()
 		est.rotulo = CONTADOR
 		CONTADOR += 1
@@ -269,6 +292,8 @@ def determinizar():
 			for i in fila[0]:
 				if AFND[i].final == True:
 					est.final = True
+				if AFND[i].eh_token == True:
+					est.eh_token = True
 				if AFND[i].inicial == True:
 					est.inicial = True
 				for k in AFND[i].transicoes:
@@ -382,8 +407,82 @@ def gerarCSV():
 			linha.append(j.trans)
 		writer.writerow(linha)
 
+def split_token(linha):
+	global i
+	token = ""
+	while(linha[i] != " " and linha[i] != '\n'):
+		token = token + linha[i]
+		i+= 1
+	while(linha[i] == ' '):
+		i+= 1
+	token = token + '\n'
+	return token
+def insereVar(cod,toke):
+	global TABELA_SIMBOLOS
+	tok = token()
+	tok.cod = cod
+	tok.token = toke
+	TABELA_SIMBOLOS.append(tok)
+def rec_token(token):
+	global AFD,FITA
+	i = 0
+	rot = 0
+	aux = 0
+	flag = 0
+	while(token[i] != '\n'):
+		for j in AFD[rot].transicoes:
+			if j.rotulo == token[i]:	
+				flag = 1			
+				if token[i+1] == '\n' and AFD[j.trans].final == True and AFD[j.trans].rotuloGr != 'X':
+					FITA.append(j.trans)
+					insereVar(j.trans,token)
+					return True
+				else:
+					aux = j.trans
+		
+		if flag == 0: 
+			return False	
+		rot = aux
+		i+= 1
+	return False
+	
+def lexic():
+	global i, CONT_LINHA
+	sucesso = True
+	with open("fonte.txt", "r") as arquivo:
+		for linha in arquivo:
+			i = 0
+			while linha[i] != '\n':
+				token = split_token(linha)
+				rec = rec_token(token)
+				if rec == False:
+					er = erro()
+					er.token = token
+					er.cod_erro = ERRO_LEX
+					er.linha = CONT_LINHA
+					TABELA_ERROS.append(er)
+					sucesso = False
+			CONT_LINHA+=1
+	return sucesso
+def printErros(flag):
+	global TABELA_ERROS
+	if flag == True:
+		print("Analise lexica nao contem erros")
+	else:
+		print("------TABELA DE ERROS------")
+		print()
+		for i in TABELA_ERROS:
+			if i.cod_erro == 0:
+				print("Erro na analise lexica!! Linha:" + str(i.linha)+ " Token:" + str(i.token))
+
+def printTabSimb():
+	print("------TABELA DE SIMBOLOS------")
+	print()
+	for i in TABELA_SIMBOLOS:
+		print("Cod: {} Valor: {} Token: {}".format(i.cod, str(i.valor).replace('\n', ''), i.token), end='')
+		
 def main():
-	global CONT_ESTADO, AFND, ESTADOS
+	global CONT_ESTADO, AFND, ESTADOS, CONT_LINHA
 
 	os.system('clear')
 
@@ -399,26 +498,20 @@ def main():
 				est.rotuloGr = 'S'
 				AFND.append(est)
 				CONT_ESTADO +=1
-			if(linha[0] != '<'):
-				leToken(linha)
-			else:
+			if(linha[0]== '#'):
+				leConst(linha)
+			elif(linha[0] == '<'):
 				leGR(linha)
-		print("Autômato Finito Não Determinístico: \n")
-		printIdentAFND()
-		input("Tecle 'Enter' para continuar...")
+			else:
+				leToken(linha)
 		determinizar()
-		print()
-		print("=======================")
-		print()
-		print("Autômato Finito Determinístico:")
-		printIdentAFD()
 		mortos()
 		insereEstErro()
-		print()
-		print("=======================")
-		print()
 		print("AFD Minimizado: ")
 		printIdentAFD(comErro = True)
 		gerarCSV()
+		printErros(lexic())
+		printTabSimb()
 
 main()
+

@@ -6,3 +6,4 @@ class estado:
 		self.final = False
 		self.rotuloGr = ""
 		self.alcancaveis = []
+		self.eh_token = False

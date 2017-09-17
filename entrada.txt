@@ -1,5 +1,6 @@
-se
-entao
-senao
++
+true
 <S> ::= a<A> | e<A> | i<A> | o<A> | u<A>
 <A> ::= a<A> | e<A> | i<A> | o<A> | u<A> | ε
+<S> ::= 1<A> | 2<A> | 3<A> | 4<A> | 5<A>
+<A> ::= 1<A> | 2<A> | 3<A> | 4<A> | 5<A> | ε
