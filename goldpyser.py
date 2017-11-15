@@ -32,16 +32,19 @@ def read_from_xml(path):
     root = tree.getroot()
     LALRTable = []
 
-    symbols = root.find('m_Symbol')
+    table_node   = root.find('LALRTable')
+    symbols_node = root.find('m_Symbol')
 
-    for symbol in symbols.findall('Symbol'):
+    nstates = int(table_node.attrib['Count'])
+
+    for symbol in symbols_node.findall('Symbol'):
         sym = simbolo()
         # Sometimes in XML the symbols are escaped in HTML format. E.g.: &lt; = <, then we need to
         # undo this convertion
         sym.rotulo = unescape(symbol.attrib['Name'])
+        # Initialize a list of `nstates` with -1 in each position
+        sym.transicoes = ['-1']*nstates
         LALRTable.append(sym)
-
-    table_node = root.find('LALRTable')
 
     for state in table_node.findall('LALRState'):
         state_number = int(state.attrib['Index'])
@@ -60,7 +63,7 @@ def read_from_xml(path):
             else:
                 transition_str = "%s%s" % (ACTIONTEXT[parse_action], goto)
 
-            LALRTable[symbol_index].transicoes.insert(state_number, transition_str)
+            LALRTable[symbol_index].transicoes[state_number] = transition_str
 
     return LALRTable
 
