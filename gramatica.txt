@@ -1,18 +1,23 @@
-"Start Symbol" = <S>
-               
+"Start Symbol" = <STMT>
+
 var = {Letter}{alphaNumeric}*
-id = {Digit}+
-   
-<S>::= <IF> <S> | <ELSE> <S> | <WHILE> <S> |  <OPER> <S> | <DEC> <S> | 'return;' | <CHAIN_IF>
-<if>::= 'if('<COND>')''{'<S>
-<CHAIN_IF>::= '}'
-<ELSE>::= 'if('<COND>')''{'<S>'else''{'<S>
-<WHILE>::= 'while''('<COND>')''{'<S>
-<COND>::= 'id' | 'id'<OP_LOGIC><COND> | <CONSTANT> | <CONSTANT> <OP_LOGIC> <COND> | 'var' | 'var' <OP_LOGIC> <COND>
-<OP_LOGIC>::= '==' | '!=' | '<' | '>' | '<=' | '>=' | '&&' | '||'
-<OPER> ::= 'var''=' <OPER2>';'
-<OPER2>::= 'id' | 'id'<OP_ARIT><OPER2> | <CONSTANT> | <CONSTANT> <OP_ARIT> <OPER2> | '('<OPER2>')' | 'var' | 'var' <OP_ARIT> <OPER2>
-<DEC>::= <TYPE> 'var'';'
-<TYPE>::= 'integer' | 'real' | 'boolean'
-<CONSTANT>::= 'TRUE'| 'FALSE'
-<OP_ARIT>::= '+' | '-' | '*' | '/' | '%' 
+const = {Digit}+
+
+<STMT>::= <IF> <STMT> | <WHILE> <STMT> | <OPER> <STMT> | <DEC> <STMT> | <>
+
+<IF>       ::= 'if' '(' <EXPR> ')' '{' <STMT> <CHAIN_IF>
+<CHAIN_IF> ::= '}' | '}' 'else' <IF> | '}' 'else' '{' <STMT> '}'
+
+<WHILE> ::= 'while' '(' <COND> ')' '{' <STMT> '}'
+
+<TYPE>   ::= 'integer' | 'real' | 'boolean'
+<DEC>    ::= <TYPE> 'var' ';'
+<ATTRIB> ::= 'var' '=' <EXPR> ';' 
+
+<BOOLS> ::= 'TRUE' | 'FALSE'
+<ID>    ::= const | var | <BOOLS>
+<EXPR>  ::= <ID> <OP> <ID> | <ID>
+
+<OP_LOGIC> ::= '==' | '!=' | '<' | '>' | '<=' | '>=' | '&&' | '||'
+<OP_ARIT>  ::= '+' | '-' | '*' | '/' | '%' 
+
