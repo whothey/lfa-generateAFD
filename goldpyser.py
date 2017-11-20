@@ -24,9 +24,15 @@ ACTIONTEXT = {
 }
 
 
-def read_from_xml(path):
+def read_from_xml(path, translation_table = {}):
     """
-    Read a Gold-Parser XML dump and creates the LALR Parsing Table using a list of `simbolo`
+    Read a Gold-Parser XML dump and creates the LALR Parsing Table using a list of `simbolo`.
+
+    This function could also use a dict as "Translation Table", to change the symbols parsed from
+    XML to others on-the-fly.
+
+    E.g.: if you want to change the symbol "while" to "enquanto" do:
+    goldpyser.read_from_xml('./mygrammar.xml', translation_table={ 'while': 'enquanto' })
     """
     tree = ElementTree.parse(path)
     root = tree.getroot()
@@ -38,10 +44,19 @@ def read_from_xml(path):
     nstates = int(table_node.attrib['Count'])
 
     for symbol in symbols_node.findall('Symbol'):
-        sym = simbolo()
+        # The symbol label, to be tested with translation table:
         # Sometimes in XML the symbols are escaped in HTML format. E.g.: &lt; = <, then we need to
         # undo this convertion
-        sym.rotulo = unescape(symbol.attrib['Name'])
+        slabel = unescape(symbol.attrib['Name'])
+
+        # Creates a new 'Symbol'
+        sym = simbolo()
+
+        # Check if there is any entry for the symbol in the translation table, if there is some,
+        # then uses the "translated symbol" (value of the dict under the key `slabel`), else use
+        # the symbol "as is"
+        sym.rotulo = translation_table[slabel] if slabel in translation_table else slabel 
+
         # Initialize a list of `nstates` with -1 in each position
         sym.transicoes = ['-1']*nstates
         LALRTable.append(sym)
